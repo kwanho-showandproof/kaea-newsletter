@@ -2,7 +2,7 @@ name: 매일 웹진 자동 생성
 
 on:
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 permissions:
