@@ -158,7 +158,9 @@ def build_news_items(items):
         date = esc(it.get("date", ""))
         summary = esc(it.get("summary", ""))
         url = it.get("url", "").strip()
-        src_label = f"[{date}/{source}]" if date else f"[{source}]"
+        # 발행사(source)는 네이버 API가 제공하지 않으므로 날짜만 표시한다.
+        # 날짜가 있으면 [7.7], 없으면 라벨 자체를 생략.
+        src_label = f"[{date}]" if date else ""
 
         if url:
             # 실제 원문 링크 (새 창) - 진짜 URL이라 iframe 튕김 이슈 없음
@@ -167,9 +169,11 @@ def build_news_items(items):
             # URL이 없는 경우 데모 안내
             link = f'<a onclick="openArticle(event)">{i}. {title}</a>'
 
+        # 날짜 라벨이 있을 때만 source span을 넣는다 (빈 대괄호 방지)
+        source_html = f'<span class="news-source">{src_label}</span> ' if src_label else ""
         out += f"""      <div class="news-item">
         <div class="news-title">{link}</div>
-        <p class="news-summary"><span class="news-source">{src_label}</span> {summary}</p>
+        <p class="news-summary">{source_html}{summary}</p>
       </div>
 """
     return out
