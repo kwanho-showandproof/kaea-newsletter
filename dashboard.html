@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>협회 운영 대시보드 · 한국자동차환경협회</title>
+<style>
+  :root {
+    --primary: #1F4E79; --primary-light: #E6F1FB; --primary-dark: #163C5E;
+    --danger: #A32D2D; --danger-light: #FCEBEB; --green: #2E7D46; --green-light: #E9F5EE;
+    --warning: #B8860B;
+    --text: #1A1A1A; --text-sub: #555; --text-mute: #888;
+    --border: #E5E5E5; --bg: #F8F9FB; --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+  header { background: var(--primary); color: white; padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .logo { font-size: 16px; font-weight: 700; }
+  .logo small { font-size: 12px; font-weight: 400; opacity: 0.85; margin-left: 8px; }
+  .lock { font-size: 11px; background: rgba(255,255,255,0.18); padding: 3px 10px;
+    border-radius: 12px; margin-left: 10px; }
+  .header-meta { font-size: 12px; opacity: 0.9; display: flex; align-items: center; gap: 8px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #6EE7A0; display: inline-block; }
+  .tabs { background: var(--card); border-bottom: 2px solid var(--border); padding: 0 20px;
+    display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab { padding: 14px 18px; cursor: pointer; font-size: 14px; color: var(--text-sub);
+    border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+  .tab:hover { color: var(--primary); }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+  .tab .badge { background: var(--primary-light); color: var(--primary); font-size: 11px;
+    padding: 1px 7px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
+  .tab .badge.alert { background: var(--danger-light); color: var(--danger); }
+  main { max-width: 1000px; margin: 0 auto; padding: 24px 20px 48px; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .stat-label { font-size: 12px; color: var(--text-mute); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 800; color: var(--text); }
+  .stat-value small { font-size: 13px; font-weight: 400; color: var(--text-mute); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.danger { color: var(--danger); }
+  .stat-value.primary { color: var(--primary); }
+  .stat-sub { font-size: 11px; color: var(--text-mute); margin-top: 4px; }
+  .info-box { background: var(--primary-light); border-left: 4px solid var(--primary);
+    padding: 14px 18px; border-radius: 4px; font-size: 13px; color: #0C2C4A; margin-bottom: 22px; }
+  .info-box strong { color: var(--primary); }
+  .section-title { font-size: 15px; font-weight: 700; margin: 26px 0 12px; color: var(--text); }
+  .cat-section { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 14px; overflow: hidden; }
+  .cat-head { background: var(--primary); color: white; padding: 12px 18px; display: flex;
+    justify-content: space-between; align-items: center; }
+  .cat-name { font-size: 14.5px; font-weight: 700; }
+  .cat-count { font-size: 12px; opacity: 0.9; }
+  .news-item { padding: 14px 18px; border-bottom: 1px solid #F0F0F0; }
+  .news-item:last-child { border-bottom: none; }
+  .news-title { font-size: 14.5px; font-weight: 600; margin-bottom: 5px; }
+  .news-title a { color: var(--primary); text-decoration: none; }
+  .news-title a:hover { text-decoration: underline; }
+  .news-summary { font-size: 13px; color: var(--text-sub); }
+  .news-meta { font-size: 11.5px; color: var(--text-mute); margin-top: 5px; }
+  .chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px; margin-bottom: 22px; }
+  .chart-title { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12.5px; }
+  .bar-label { width: 90px; text-align: right; color: var(--text-sub); flex-shrink: 0; }
+  .bar-track { flex: 1; background: #EEF1F4; border-radius: 4px; height: 20px; position: relative; }
+  .bar-fill { background: var(--primary); height: 100%; border-radius: 4px; min-width: 2px; }
+  .bar-val { width: 40px; font-weight: 700; color: var(--primary); flex-shrink: 0; }
+  .trend { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding: 10px 0;
+    border-bottom: 1px solid var(--border); }
+  .trend-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 20px; }
+  .trend-bar { width: 60%; background: var(--primary); border-radius: 3px 3px 0 0; min-height: 2px; }
+  .trend-bar.pub { background: var(--green); }
+  .trend-date { font-size: 10px; color: var(--text-mute); }
+  .trend-legend { font-size: 11px; color: var(--text-mute); margin-top: 8px; display: flex; gap: 16px; }
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+  .kw-group { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; margin-bottom: 12px; }
+  .kw-cat { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 10px; }
+  .kw-label { font-size: 11px; color: var(--text-mute); font-weight: 700; margin: 8px 0 4px; }
+  .kw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: var(--primary-light); color: var(--primary); font-size: 12px;
+    padding: 3px 10px; border-radius: 12px; }
+  .chip.gen { background: #F0F0F0; color: var(--text-sub); }
+  .empty-tab { text-align: center; padding: 60px 20px; color: var(--text-mute); }
+  .empty-tab .big { font-size: 40px; margin-bottom: 12px; }
+  .empty-tab .msg { font-size: 15px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+  .empty-tab .sub { font-size: 13px; }
+  .blocked-item { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+    border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .blocked-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .reason-tag { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; }
+  .reason-tag.reason-kw { background: var(--danger-light); color: var(--danger); }
+  .reason-tag.reason-ai { background: #FFF4E0; color: var(--warning); }
+  .blocked-cat { font-size: 11px; color: var(--text-mute); }
+  .blocked-title { font-size: 14.5px; font-weight: 600; margin-bottom: 5px; }
+  .blocked-title a { color: var(--text); text-decoration: none; }
+  .blocked-title a:hover { text-decoration: underline; color: var(--primary); }
+  .blocked-summary { font-size: 13px; color: var(--text-sub); margin-bottom: 6px; }
+  .blocked-detail { font-size: 12px; color: var(--danger); }
+  .footer { text-align: center; padding: 24px; font-size: 12px; color: var(--text-mute); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">한국자동차환경협회 <small>뉴스레터 자동화 시스템</small><span class="lock">🔒 협회 운영 전용</span></div>
+  <div class="header-meta"><span class="status-dot"></span>정상 작동 중 · 2026-07-09 (목)</div>
+</header>
+
+<nav class="tabs">
+  <div class="tab active" onclick="go('monitoring')">오늘의 뉴스 모니터링</div>
+  <div class="tab" onclick="go('blocked')">AI 차단 검토<span class="badge">15</span></div>
+  <div class="tab" onclick="go('failures')">발송 실패 추적</div>
+  <div class="tab" onclick="go('keywords')">키워드 관리</div>
+</nav>
+
+<main>
+
+<section class="page active" id="monitoring">
+  <div class="info-box">
+    <strong>운영 방식 안내</strong> · 본 화면은 협회 담당자용 운영 모니터링입니다. 자동 수집·정리된 뉴스를 참고해 스티비에서 뉴스레터를 편집·발송하며, 동시에 회원사 웹진에도 자동 게시됩니다.
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">수집된 기사</div>
+      <div class="stat-value">67<small>건</small></div>
+      <div class="stat-sub">네이버 검색 API</div></div>
+    <div class="stat"><div class="stat-label">중복 제거</div>
+      <div class="stat-value primary">27<small>건</small></div>
+      <div class="stat-sub">AI 의미 판정</div></div>
+    <div class="stat"><div class="stat-label">부정 차단</div>
+      <div class="stat-value danger">15<small>건</small></div>
+      <div class="stat-sub">키워드 0 · AI 15</div></div>
+    <div class="stat"><div class="stat-label">최종 발행</div>
+      <div class="stat-value green">25<small>건</small></div>
+      <div class="stat-sub">웹진 게시 완료</div></div>
+</div>
+
+  <div class="chart-box">
+    <div class="chart-title">카테고리별 발행 분포 (오늘)</div>
+    <div class="bar-row">
+      <div class="bar-label">상위기관 뉴스</div>
+      <div class="bar-track"><div class="bar-fill" style="width:40%"></div></div>
+      <div class="bar-val">2</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">배출 저감사업 뉴스</div>
+      <div class="bar-track"><div class="bar-fill" style="width:60%"></div></div>
+      <div class="bar-val">3</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">전기·수소차 뉴스</div>
+      <div class="bar-track"><div class="bar-fill" style="width:40%"></div></div>
+      <div class="bar-val">2</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">한국자동차환경협회 뉴스</div>
+      <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div>
+      <div class="bar-val">5</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">기타 뉴스</div>
+      <div class="bar-track"><div class="bar-fill" style="width:40%"></div></div>
+      <div class="bar-val">2</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">회원사 뉴스</div>
+      <div class="bar-track"><div class="bar-fill" style="width:80%"></div></div>
+      <div class="bar-val">4</div>
+    </div>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">날짜별 추이 (최근 14일)</div>
+    <div class="trend">
+      <div class="trend-col">
+        <div style="display:flex;gap:2px;align-items:flex-end;height:110px">
+          <div class="trend-bar" style="height:110px" title="수집 67"></div>
+          <div class="trend-bar pub" style="height:41px" title="발행 25"></div>
+        </div>
+        <div class="trend-date">07.09</div>
+      </div>
+    </div>
+    <div class="trend-legend">
+      <span><span class="legend-dot" style="background:var(--primary)"></span>수집</span>
+      <span><span class="legend-dot" style="background:var(--green)"></span>발행</span>
+    </div>
+  </div>
+
+  <div class="section-title">카테고리별 게시 뉴스</div>
+    <div class="cat-section">
+      <div class="cat-head"><div class="cat-name">상위기관 뉴스</div>
+        <div class="cat-count">2건 게시</div></div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://www.gukjenews.com/news/articleView.html?idxno=3630489" target="_blank" rel="noopener">수도권대기환경청, 오산 대림제지 방문해 대기오염 저감 이행 점검</a></div>
+        <div class="news-summary">수도권대기환경청이 경기도 오산시 소재 ㈜대림제지를 방문하여 대기오염물질 방지시설 운영 현황을 점검했다. 이는 여름철 대기오염 저감을 위한 정부의 산업체 지도·감시 활동의 일환이다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.ikld.kr/news/articleView.html?idxno=337283" target="_blank" rel="noopener">수도권대기환경청, 노후 건설기계 전동화 개조 사업 추진</a></div>
+        <div class="news-summary">수도권대기환경청은 건설기계 배출가스 저감을 위해 노후 건설기계 전동화 개조 사업을 추진 중입니다. 한국자동차환경협회에서 진행한 설명회를 통해 건설기계 장비의 전동화 개조 관련 정보를 공유했습니다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+    </div>
+    <div class="cat-section">
+      <div class="cat-head"><div class="cat-name">배출 저감사업 뉴스</div>
+        <div class="cat-count">3건 게시</div></div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://www.news1.kr/local/jeonbuk/6221962" target="_blank" rel="noopener">완주군, 하반기 노후차 조기폐차 지원…17일까지 접수</a></div>
+        <div class="news-summary">완주군이 미세먼지 저감과 대기환경 개선을 위해 하반기 노后차량 조기폐차 지원사업을 추진한다. 신청 기간은 13일부터 17일까지이며, 올해를 마지막으로 보조금 지원이 종료되는 배출가스 5등급 차량이 대상이다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.knnews.co.kr/news/articleView.php?idxno=1545951" target="_blank" rel="noopener">밀양시, 노후 경유차 조기폐차 2차 신청</a></div>
+        <div class="news-summary">밀양시가 노후 경유차 조기폐차 2차 신청 접수를 개시한다. 신청 대상은 배출가스 4·5등급 경유차와 도로용 3종 건설기계이며, 지원금은 차종과 연식에 따라 차등 지급된다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://www.ccdailynews.com/news/articleView.html?idxno=2426681" target="_blank" rel="noopener">예산군, 전기굴착기 보급 확대… 친환경 건설기계 전환 지원</a></div>
+        <div class="news-summary">예산군이 친환경 건설기계 전환을 지원하기 위해 전기굴착기 보급을 확대하고 있다. 조기폐차 지원사업은 3.5톤 미만 5등급 차량을 대상으로 올해를 마지막으로 종료될 예정이며, 남은 물량에 대해서는 상시 접수를 진행 중이다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+    </div>
+    <div class="cat-section">
+      <div class="cat-head"><div class="cat-name">전기·수소차 뉴스</div>
+        <div class="cat-count">2건 게시</div></div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.worktoday.co.kr/news/articleView.html?idxno=86545" target="_blank" rel="noopener">현대차그룹, V2G 가정 실증 성공 … 전기차 &#x27;전력자원화&#x27; 속도</a></div>
+        <div class="news-summary">현대차그룹이 제주도에서 진행 중인 V2G(Vehicle to Grid) 실증 사업에서 일반 가정 환경에서의 양방향 충전 기술 운영에 성공했다. 이는 전기차를 단순한 이동 수단을 넘어 전력자원으로 활용하는 &#x27;전력자원화&#x27; 사업의 진전을 보여주는 사례다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.incheonin.com/news/articleView.html?idxno=119174" target="_blank" rel="noopener">인천아시아드주경기장 주차장에 급속 전기차 충전시설 8기 설치 추진</a></div>
+        <div class="news-summary">인천시가 아시아드주경기장 주차장에 급속 전기차 충전시설 8기 설치를 추진한다. 테슬라코리아가 설치비 8억원을 자부담하고 연간 토지사용료를 납부하며, 10년 사용 기간에 1회 갱신이 가능하다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+    </div>
+    <div class="cat-section">
+      <div class="cat-head"><div class="cat-name">한국자동차환경협회 뉴스</div>
+        <div class="cat-count">5건 게시</div></div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://www.m-economynews.com/news/article.html?no=68496" target="_blank" rel="noopener">&quot;청정수소 시장 활성화, 생산·수요·인프라 구축이 핵심&quot;</a></div>
+        <div class="news-summary">청정수소 시장 활성화를 위해서는 생산, 수요, 인프라 구축이 핵심이다. 자동차뿐 아니라 건설기계, 선박, 항공 등 다양한 운송 분야에서 수소 기술 개발이 활발하며, 철강산업의 탄소중립 달성을 위해서도 수소환원제철 기술 개발이 필수적이다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://biz.chosun.com/it-science/ict/2026/07/08/B2SXL4QZFJCCPEK76Z4M6EHGJI/?utm_source=naver&amp;utm_medium=original&amp;utm_campaign=biz" target="_blank" rel="noopener">나노코리아서 제조 기술력 뽐낸 삼성전자·LG전자… “미세 공정에서 완...</a></div>
+        <div class="news-summary">나노코리아 2026 행사에서 삼성전자와 LG전자가 미세 공정 기술을 선보였다. 자동차·로봇용 반도체 구역에 3D 이미지센서, 차량용 UFS 4.1과 LPDDR5X, 탈부착형 오토SSD 등 최신 기술이 전시되었다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.ikld.kr/news/articleView.html?idxno=337283" target="_blank" rel="noopener">수도권대기환경청, 노후 건설기계 전동화 개조 사업 추진</a></div>
+        <div class="news-summary">수도권대기환경청이 건설기계 배출가스 저감을 위해 노후 건설기계의 전동화 개조 사업을 추진하고 있습니다. 한국자동차환경협회에서 관련 설명회를 개최하여 건설기계 장비의 안정성과 사업 추진 방식에 대해 설명했습니다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://www.ekn.kr/web/view.php?key=20260708020280428" target="_blank" rel="noopener">[에너지소식] 한전, 메가프로젝트 전력공급 TF 구성…한난, AI 시니어 마...</a></div>
+        <div class="news-summary">한국전력공사가 호남권 신규 반도체 산업단지 전력공급을 위한 태스크포스를 구성하여 메가프로젝트에 대응하고 있다. 대한LPG협회는 현대자동차의 LPG 승합차 &#x27;스타리아&#x27;의 실사용자 경험 확산을 추진 중이다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.jndn.com/article.php?aid=1783492444435697011" target="_blank" rel="noopener">“광주 전남 수출기업 애로 해결 앞장”</a></div>
+        <div class="news-summary">한국무역협회 회장이 지방 수출기업의 애로사항 해결을 위해 광주·전남 지역을 방문했다. 금형기계, 식품, 발전설비, 자동차부품 등 지역특화산업 기업들과 만나 수출 관련 정책과 지원방안을 논의했다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+    </div>
+    <div class="cat-section">
+      <div class="cat-head"><div class="cat-name">기타 뉴스</div>
+        <div class="cat-count">2건 게시</div></div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://www.getnews.co.kr/news/articleView.html?idxno=874542" target="_blank" rel="noopener">민형배 특별시장 &quot;광양만권, 저탄소 철강·K-배터리 핵심 거점으로 육성...</a></div>
+        <div class="news-summary">전남광주통합특별시는 광양만권을 저탄소 철강과 K-배터리 산업의 핵심 거점으로 육성할 계획이다. 여수와 광양을 연계해 배터리 소재 생산부터 폐배터리 재활용까지 전주기 생태계를 구축하여 지역 산업 기반을 강화할 예정이다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.mdilbo.com/detail/0kIA7d/757023" target="_blank" rel="noopener">광주 반도체 클러스터 본궤도···2030년 양산 목표</a></div>
+        <div class="news-summary">광주 반도체 클러스터가 본격화되고 있으며, 2030년 양산을 목표로 추진 중이다. 저탄소·고부가가치 철강산업 전환을 위한 전력 인프라 확충과 이차전지 전주기 생태계 구축이 함께 추진되고 있다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+    </div>
+    <div class="cat-section">
+      <div class="cat-head"><div class="cat-name">회원사 뉴스</div>
+        <div class="cat-count">4건 게시</div></div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.fnnews.com/news/202607081000154852" target="_blank" rel="noopener">신성이엔지·에코앤드림 등 중견 소부장, 잇단 지속가능경영 공개</a></div>
+        <div class="news-summary">신성이엔지, 에코앤드림 등 자동차 부품·소재 중견기업들이 2025 지속가능경영보고서를 잇달아 발간하며 탄소배출, 책임광물 관리 등 ESG 경영 성과를 공개하고 있다. 이는 글로벌 배터리 소재 공급망에서 지속가능성 관리의 중요성이 커지는 추세를 반영한 것이다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://www.enetnews.co.kr/news/articleView.html?idxno=52119" target="_blank" rel="noopener">[브랜드평판] 현대모비스, 자동차부품 상장기업 7월 1위···한온시스템...</a></div>
+        <div class="news-summary">현대모비스가 7월 자동차부품 상장기업 브랜드평판 1위를 차지했으며, 한온시스템이 그 뒤를 따랐다. 자동차부품 상장기업 브랜드 빅데이터는 전월 대비 8.60% 증가했고, 브랜드소비 지수는 10.63% 상승했다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="https://www.ekn.kr/web/view.php?key=20260708028480598" target="_blank" rel="noopener">[패트롤] 인천시-인천시의회-인천시교육청-인천경제청</a></div>
+        <div class="news-summary">인천시가 철새 보전과 생물다양성 정책의 성과를 국제사회와 공유하며 생태환경도시로서의 위상을 강화하고 있다. 인천시는 오는 14~15일 경원재 바이 워커힐에서 &#x27;EAAFP 20주년 기념행사&#x27;를 개최할 예정이다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+      <div class="news-item">
+        <div class="news-title"><a href="http://www.newsian.co.kr/news/articleView.html?idxno=91963" target="_blank" rel="noopener">현대차그룹, 2·3차 협력사까지 상생 확대…&quot;2028년 로봇 신사업도 함께...</a></div>
+        <div class="news-summary">현대자동차그룹이 2·3차 협력사까지 포함하여 상생 협력을 확대하고 있습니다. 수소에너지, 스마트팩토리, 로봇 등 미래 신사업 분야에서 협력사들이 단순 부품 공급자에서 벗어나 핵심 파트너로 성장할 수 있도록 지원할 계획입니다.</div>
+        <div class="news-meta">[7.8]</div>
+      </div>
+    </div>
+
+</section>
+
+<section class="page" id="blocked">
+  <div class="info-box">
+    <strong>AI 차단 검토</strong> · 부정 뉴스로 차단된 기사 목록입니다. 혹시 잘못 걸러진 뉴스가 없는지 검토하세요. (중복 제거 기사는 목록에서 제외하고 건수만 표시합니다.)
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">중복 제거</div>
+      <div class="stat-value primary">27<small>건</small></div>
+      <div class="stat-sub">같은 사건 기사 통합</div></div>
+    <div class="stat"><div class="stat-label">부정 차단(키워드)</div>
+      <div class="stat-value danger">0<small>건</small></div>
+      <div class="stat-sub">리콜·담합 등 즉시 제외</div></div>
+    <div class="stat"><div class="stat-label">부정 차단(AI)</div>
+      <div class="stat-value danger">15<small>건</small></div>
+      <div class="stat-sub">Claude 톤 판정</div></div>
+  </div>
+
+  <div class="section-title">차단된 기사 (15건)</div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">전기·수소차 뉴스</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.sportsseoul.com/news/read/1621395?ref=naver" target="_blank" rel="noopener">BMW 7시리즈, 상반기 수입 대형차 판매 1위…“최대 1200만 원 혜택으로...</a></div>
+      <div class="blocked-summary">먼저 순수전기차인 BMW i7 구매 고객에게는 1년 무제한 충전 카드 또는 월박스 충전기 설치 지원 혜택이 제공되며, 순수전기차 고객 전용 멤버십인 ‘BMW i 소울메이트’를 통해 충전 카드 및 타이어 등 부품 할인...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">한국자동차환경협회 뉴스</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.ajunews.com/view/20260708123649994" target="_blank" rel="noopener">[ABC 개국] 세레모니 참석 인사</a></div>
+      <div class="blocked-summary">현대자동차 부사장, 호경업 LG화학 상무, 황관식 현대자동차 상무 학계 고광국 한남대학교 객원교수... 박기철 한국원자력산업환경진흥협회 이사장, 박성희 협동조합 지구정원컴퍼니 이사장, 신봉길 한-인도 미래협회...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">한국자동차환경협회 뉴스</span>
+      </div>
+      <div class="blocked-title"><a href="https://daily.hankooki.com/news/articleView.html?idxno=1384027" target="_blank" rel="noopener">[안효문의 車한잔] 중국차 잔혹사</a></div>
+      <div class="blocked-summary">사진=BYD 제공  한국수입자동차협회(KAIDA) 통계자료에 따르면 올 상반기 중국 브랜드 신규등록 차량은... 기후에너지환경부는 올해 &#x27;전기차 보급사업 수행자 선정 평가&#x27;를 시행했는데, BYD가 선정되지 못했다. 이번 평가는...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">기타 뉴스</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.g-enews.com/view.php?ud=2026070805531664852bd56fbc3c_1" target="_blank" rel="noopener">현대차·기아 유럽 방어전…BYD 155% 질주</a></div>
+      <div class="blocked-summary">1% 줄었으며 자동차와 화학 업종의 위축이 두드러졌다. 주목할 대목은 유럽 신차시장 자체는 오히려... EU 배출권 가격은 10년 전 톤당 8유로 안팎에서 최근 80유로(약 13만 8319원)까지 뛰었다. EU가 올해부터 시행한...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">회원사 뉴스</span>
+      </div>
+      <div class="blocked-title"><a href="http://www.ujeil.com/news/articleView.html?idxno=388551" target="_blank" rel="noopener">이윤희 울산시 명장(화훼) 싱가포르 정원 (8)</a></div>
+      <div class="blocked-summary">이 구조물은 단순한 조형물이 아니라 식물, 에너지, 환경 기능이 결합된 복합 장치로 작용한다. 가든스 바이 더 베이, 자연과 기술이 결합된 미래형 정원의 슈퍼트리 야경. 이 공간을 대표하는 상징적 요소는 &#x27;슈퍼트리...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">회원사 뉴스</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.ytn.co.kr/_ln/0103_202607081151083675" target="_blank" rel="noopener">캐나다 내부 전언, &quot;사실 韓 잠수함 탐났다? &#x27;복수 선정&#x27; 고민했다더라...</a></div>
+      <div class="blocked-summary">두산의 에너지 수소까지도 제안할 수 있는 모든 산업 협력에 대한 부분을 제안하다 보니까 캐나다... 최근에 유럽 국가들이 &#x27;바이 유로피언(Buy European)&#x27; 정책에 의해서 유럽산 무기를 우선 구매하겠다는 기조가 강화되고...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">유럽 (EU)</span>
+      </div>
+      <div class="blocked-title"><a href="https://biz.heraldcorp.com/article/10802884?ref=naver" target="_blank" rel="noopener">유로 무대 장악한 제니, 美 빌보드 ‘핫100’ 자체 최고 기록</a></div>
+      <div class="blocked-summary">명실상부 팝스타 제니(JENNIE)가 미국 빌보드 메인 싱글 차트에서 자체 최고 기록을 세웠다. 7일(현지시간) 발표된 미국 빌보드 최신 차트에 따르면 제니가 호주의 사이케델릭 거장 테임 임팔라와 협업한 ‘드라큘라...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">유럽 (EU)</span>
+      </div>
+      <div class="blocked-title"><a href="https://news.einfomax.co.kr/news/articleView.html?idxno=4424036" target="_blank" rel="noopener">미 달러화 강세…美·이란 교전 속 트럼프 &quot;휴전은 끝났다&quot;</a></div>
+      <div class="blocked-summary">유로-달러 환율은 1.14067달러로 전장보다 0.00099달러(0.087%) 내려갔다. 파운드-달러 환율은 1.33401달러로 0.00213달러(0.159%) 떨어졌다. 역외 달러-위안(CNH) 환율은 6.8052위안으로 0.0016위안(0.024%) 상승했다.</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">유럽 (EU)</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.digitaltoday.co.kr/news/articleView.html?idxno=682595" target="_blank" rel="noopener">베이스, 스테이블코인·실물자산 토큰용 B20 표준 활성화</a></div>
+      <div class="blocked-summary">스테이블코인형은 소수점 6자리로 고정되며, 발행자는 미국 달러나 유로처럼 기준이 되는 법정화폐를 명시해야 한다. B20은 기존 ERC-20과 호환되면서도 발행자 제어 기능을 내장했다. 공급량 한도, 전송 규칙, 발행과...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">유럽 (EU)</span>
+      </div>
+      <div class="blocked-title"><a href="http://www.newsroad.co.kr/news/articleView.html?idxno=61348" target="_blank" rel="noopener">호르무즈가 유가 흔들고, AI는 증시 눌렀다</a></div>
+      <div class="blocked-summary">유로스톡스50과 독일 DAX는 약세를 보였다. 에너지주는 유가 상승의 방어막이 됐다. 산업주는 경기 둔화와... 딜로이트는 2024~2025시즌 유럽 축구 매출이 402억유로로 사상 최대를 기록했다고 밝혔다. 프리미어리그...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">유럽 (EU)</span>
+      </div>
+      <div class="blocked-title"><a href="https://nownews.seoul.co.kr/news/newsView.php?id=20260708601024&amp;wlog_tag3=naver" target="_blank" rel="noopener">“그린란드 내놔” 트럼프 또 영토 군침…불쾌한 덴마크 총리 “매물 아...</a></div>
+      <div class="blocked-summary">이에 대해 유로뉴스는 한 소식통의 말을 인용해 “나토의 주요 의사결정기구인 북대서양이사회(NAC)에서 그린란드 문제가 공식 의제로 다뤄질 가능성은 매우 낮다”면서 “이번 회담의 전략은 해당 사안을 언급하지 않고...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">유럽 (EU)</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.asiatoday.co.kr/kn/view.php?key=20260709010003171" target="_blank" rel="noopener">혼밥·배달문화 확산에… 불황에 강한 &#x27;버거&#x27; 5조 시장 꿰찼다</a></div>
+      <div class="blocked-summary">8일 시장조사업체 유로모니터에 따르면 국내 버거 시장 규모는 2015년 약 2조3000억원에서 지난해 약... 그 결과 올해 1분기 런치 메뉴 판매량은 전년 대비 약 7%, 매출은 15% 증가했으며 2분기에는 판매량이 11%, 매출은 18...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">유럽 (EU)</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.ebn.co.kr/news/articleView.html?idxno=1715622" target="_blank" rel="noopener">알보젠코리아, 유로박솜 국내 유통 맡는다…비뇨기 포트폴리오 확대</a></div>
+      <div class="blocked-summary">유로박솜&#x27;의 국내 유통을 맡으며 비뇨기 분야 사업 경쟁력 강화에 나선다. 기존 비뇨기·산부인과 영역에서 축적한 제품 운영 경험을 기반으로 관련 시장 내 입지를 확대한다는 전략이다. 8일 알보젠코리아는 유로박...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">중국 (China)</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.newsworks.co.kr/news/articleView.html?idxno=846570" target="_blank" rel="noopener">EV 보조금 못 받는 中 BYD·지커, 상승세 유지 가능할까?…&quot;위협은 여전...</a></div>
+      <div class="blocked-summary">BYD와 지커가 모두 중국 브랜드라는 점에서 국내 시장에서 공동 전선을 펼치며 점유율을 넓혀가고 있다는 점도 간과할 수 없다. 실제로 두 브랜드가 겨냥하는 가격대는 겹치지 않는다. BYD는 2000만원 후반~4000만원...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+    <div class="blocked-item">
+      <div class="blocked-head">
+        <span class="reason-tag reason-ai">AI 판정</span>
+        <span class="blocked-cat">중국 (China)</span>
+      </div>
+      <div class="blocked-title"><a href="https://www.ceoscoredaily.com/page/view/2026070815554004765" target="_blank" rel="noopener">“전기차, ‘캐즘’ 한파 넘어 서는데”…갈수록 추락하는 K-배터리, ES...</a></div>
+      <div class="blocked-summary">국내 배터리 3사가 부진한 기간 동안, 중국 CATL은 점유율을 30%에서 33.7%로 BYD는 점유율을 7.7%에서 10.6%까지 높였다. 이들은 기존 중국 내 시장을 넘어 해외 시장에 본격 진출하면서 낮은 가격과 LFP 제품 기술력 등을...</div>
+      <div class="blocked-detail">차단 사유: 부적절/자극적 내용으로 판정</div>
+    </div>
+
+</section>
+
+<section class="page" id="failures">
+  <div class="empty-tab">
+    <div class="big">📮</div>
+    <div class="msg">발송 실패 추적 · 준비 중</div>
+    <div class="sub">이메일 발송은 스티비에서 이루어집니다. 스티비 연동 시 발송 실패 현황이 여기에 표시됩니다.</div>
+  </div>
+</section>
+
+<section class="page" id="keywords">
+  <div class="info-box">
+    <strong>키워드 관리</strong> · 현재 뉴스 수집에 사용되는 키워드입니다. 변경은 keywords.py 파일에서 이루어집니다.
+  </div>
+    <div class="kw-group">
+      <div class="kw-cat">상위기관 뉴스</div>
+      <div class="kw-label">주요 키워드 (검색어)</div>
+      <div class="kw-chips"><span class="chip">환경부</span><span class="chip">수도권대기환경청</span><span class="chip">기후에너지환경부</span></div>
+      <div class="kw-label">일반 키워드 (2차 필터)</div>
+      <div class="kw-chips"><span class="chip gen">저감</span><span class="chip gen">저공해차보급목표제</span><span class="chip gen">저공해차보급기여금</span><span class="chip gen">자동차탄소중립</span><span class="chip gen">자동차온실가스</span><span class="chip gen">수송온실가스</span></div>
+    </div>
+    <div class="kw-group">
+      <div class="kw-cat">배출 저감사업 뉴스</div>
+      <div class="kw-label">주요 키워드 (검색어)</div>
+      <div class="kw-chips"><span class="chip">조기폐차</span><span class="chip">DPF</span><span class="chip">노후경유차</span><span class="chip">배출가스5등급</span><span class="chip">운행제한</span><span class="chip">계절관리제</span><span class="chip">요소수</span><span class="chip">삼원촉매</span></div>
+      <div class="kw-label">일반 키워드 (2차 필터)</div>
+      <div class="kw-chips"><span class="chip gen">비상저감조치</span><span class="chip gen">건설기계</span><span class="chip gen">GHP</span><span class="chip gen">엔진교체</span><span class="chip gen">배출가스4등급</span><span class="chip gen">녹색교통지역</span><span class="chip gen">LEZ</span><span class="chip gen">가스히트펌프</span><span class="chip gen">가스냉난방장치</span><span class="chip gen">배출가스</span><span class="chip gen">배출가스등급</span><span class="chip gen">친환경운전</span><span class="chip gen">스마트운전</span></div>
+    </div>
+    <div class="kw-group">
+      <div class="kw-cat">전기·수소차 뉴스</div>
+      <div class="kw-label">주요 키워드 (검색어)</div>
+      <div class="kw-chips"><span class="chip">충전인프라</span><span class="chip">전기차</span><span class="chip">전기차 충전기</span><span class="chip">전기차 충전소</span><span class="chip">수소차</span><span class="chip">수소충전소</span><span class="chip">수소차충전소</span><span class="chip">전기차충전</span><span class="chip">급속 충전기</span><span class="chip">이동식 충전기</span></div>
+      <div class="kw-label">일반 키워드 (2차 필터)</div>
+      <div class="kw-chips"><span class="chip gen">하이브리드</span><span class="chip gen">하이브리드자동차</span><span class="chip gen">전기지게차</span><span class="chip gen">전기굴삭기</span><span class="chip gen">전기건설기계</span><span class="chip gen">수소지게차</span><span class="chip gen">수소굴삭기</span><span class="chip gen">수소건설기계</span><span class="chip gen">전기차개조</span><span class="chip gen">하이브리드개조</span><span class="chip gen">수소개조</span><span class="chip gen">전동화개조</span><span class="chip gen">전기버스</span><span class="chip gen">수소버스</span><span class="chip gen">수소청소차</span><span class="chip gen">현대차</span><span class="chip gen">기아</span><span class="chip gen">BMW</span><span class="chip gen">테슬라</span><span class="chip gen">GM</span><span class="chip gen">아우디</span></div>
+    </div>
+    <div class="kw-group">
+      <div class="kw-cat">한국자동차환경협회 뉴스</div>
+      <div class="kw-label">주요 키워드 (검색어)</div>
+      <div class="kw-chips"><span class="chip">한국자동차환경협회</span><span class="chip">자동차환경협회</span></div>
+      <div class="kw-label">일반 키워드 (2차 필터)</div>
+      <div class="kw-chips"><span style="color:#aaa">없음</span></div>
+    </div>
+    <div class="kw-group">
+      <div class="kw-cat">기타 뉴스</div>
+      <div class="kw-label">주요 키워드 (검색어)</div>
+      <div class="kw-chips"><span class="chip">친환경 모빌리티</span><span class="chip">자동차 배출권</span><span class="chip">폐배터리 재활용</span><span class="chip">V2G</span></div>
+      <div class="kw-label">일반 키워드 (2차 필터)</div>
+      <div class="kw-chips"><span style="color:#aaa">없음</span></div>
+    </div>
+    <div class="kw-group">
+      <div class="kw-cat">회원사 (54개사)</div>
+      <div class="kw-chips"><span class="chip">디엔지비</span><span class="chip">목포현대상용서비스</span><span class="chip">미래엠에스</span><span class="chip">세라컴</span><span class="chip">알오씨오토시스템</span><span class="chip">에이치케이엠엔에스</span><span class="chip">에코닉스</span><span class="chip">에코앤드림</span><span class="chip">이알인터내셔널</span><span class="chip">일진하이솔루스</span><span class="chip">제이엠웨이브</span><span class="chip">화이버텍</span><span class="chip">후지노테크</span><span class="chip">리셀파워</span><span class="chip">모니트</span><span class="chip">바이에너지</span><span class="chip">보타리에너지</span><span class="chip">브라이트에너지파트너스</span><span class="chip">블루네트웍스</span><span class="chip">선광시스템</span><span class="chip">소프트베리</span><span class="chip">스칼라데이터</span><span class="chip">스타코프</span><span class="chip">에바</span><span class="chip">에버온</span><span class="chip">SG생활안전</span><span class="chip">SK시그넷</span><span class="chip">에스케이일렉링크</span><span class="chip">엘에스이링크</span><span class="chip">LG유플러스 볼트업</span><span class="chip">이브이루씨</span><span class="chip">이브이시스</span><span class="chip">이엘일렉트릭</span><span class="chip">이온어스</span><span class="chip">이지차저</span><span class="chip">이지트로닉스</span><span class="chip">이테스</span><span class="chip">지에스차지비</span><span class="chip">채비</span><span class="chip">캐스트프로</span><span class="chip">코스텔</span><span class="chip">클린일렉스</span><span class="chip">태성콘텍</span><span class="chip">티비유</span><span class="chip">파워큐브코리아</span><span class="chip">아이파킹</span><span class="chip">펌프킨</span><span class="chip">플러그링크</span><span class="chip">피라인모터스</span><span class="chip">한국전기차인프라기술</span><span class="chip">한국전기차충전서비스</span><span class="chip">나이스인프라</span><span class="chip">해피카</span><span class="chip">휴맥스이브이</span></div>
+    </div>
+
+</section>
+
+</main>
+
+<footer class="footer">한국자동차환경협회 (KAEA) · 뉴스레터 자동화 시스템 운영 대시보드</footer>
+
+<script>
+  function go(id) {
+    document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+    var ids = ['monitoring', 'blocked', 'failures', 'keywords'];
+    var tabs = document.querySelectorAll('.tab');
+    var idx = ids.indexOf(id);
+    if (idx >= 0) tabs[idx].classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
