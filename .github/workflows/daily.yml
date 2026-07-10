@@ -3,9 +3,18 @@ name: 매일 웹진 자동 생성
 # 언제 실행할지
 on:
   schedule:
-    - cron: '*/5 * * * *'
-      timezone: 'Asia/Seoul'
-  workflow_dispatch:
+    # GitHub Actions 스케줄은 정시 실행이 보장되지 않아(지연·누락) 세 번 시도한다.
+    # 셋 중 하나라도 실행되면 그날 웹진이 생성되고, 이미 생성됐으면 이후 시도는 건너뛴다.
+    #
+    # timezone 필드(2026-03 지원)로 KST를 직접 지정한다. UTC 변환이 필요 없다.
+    # 분(minute)을 15로 둔 이유: 정각(0분)은 전 세계 스케줄이 몰려 지연이 심하므로 피한다.
+    - cron: '15 5 * * *'
+      timezone: 'Asia/Seoul'   # KST 05:15
+    - cron: '15 6 * * *'
+      timezone: 'Asia/Seoul'   # KST 06:15
+    - cron: '15 7 * * *'
+      timezone: 'Asia/Seoul'   # KST 07:15
+  workflow_dispatch:            # Actions 탭에서 수동 실행도 가능
 
 # 생성 결과를 저장소에 자동 저장(커밋)하기 위한 쓰기 권한
 permissions:
@@ -22,7 +31,7 @@ jobs:
 
       # 2) 오늘(KST) 웹진이 이미 생성됐는지 확인 (중복 방지)
       #    news/YYYY-MM-DD.html (오늘 KST 날짜)이 이미 있으면 이후 단계를 건너뛴다.
-      #    → 5시에 생성됐으면 6시·7시 시도는 수집·필터·생성을 모두 건너뛰어
+      #    → 5:15에 생성됐으면 6:15·7:15 시도는 수집·필터·생성을 모두 건너뛰어
       #      네이버/Claude API 낭비와 중복 커밋을 막는다.
       #    단, 수동 실행(workflow_dispatch)은 항상 진행한다.
       - name: 오늘 생성 여부 확인
