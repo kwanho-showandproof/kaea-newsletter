@@ -3,13 +3,9 @@ name: 매일 웹진 자동 생성
 # 언제 실행할지
 on:
   schedule:
-    # GitHub Actions 스케줄은 정시 실행이 보장되지 않아(지연·누락) 세 번 시도한다.
-    # 셋 중 하나라도 실행되면 그날 웹진이 생성되고, 이미 생성됐으면 이후 시도는 건너뛴다.
-    # UTC 기준. 전날 UTC 20/21/22시 = 당일 KST 05/06/07시.
-    - cron: '0 20 * * *'   # KST 05:00
-    - cron: '0 21 * * *'   # KST 06:00
-    - cron: '0 22 * * *'   # KST 07:00
-  workflow_dispatch:        # Actions 탭에서 수동 실행도 가능
+    - cron: '*/5 * * * *'
+      timezone: 'Asia/Seoul'
+  workflow_dispatch:
 
 # 생성 결과를 저장소에 자동 저장(커밋)하기 위한 쓰기 권한
 permissions:
