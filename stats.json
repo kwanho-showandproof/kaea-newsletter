@@ -66,5 +66,22 @@
       "기타 뉴스": 6,
       "회원사 뉴스": 6
     }
+  },
+  {
+    "date": "2026-07-13",
+    "collected": 67,
+    "duplicates_removed": 14,
+    "negative_blocked": 19,
+    "hard_blocked": 0,
+    "ai_blocked": 19,
+    "final_published": 34,
+    "by_category": {
+      "상위기관 뉴스": 0,
+      "배출 저감사업 뉴스": 2,
+      "전기·수소차 뉴스": 4,
+      "한국자동차환경협회 뉴스": 3,
+      "기타 뉴스": 5,
+      "회원사 뉴스": 5
+    }
   }
 ]
