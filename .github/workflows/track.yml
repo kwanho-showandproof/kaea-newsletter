@@ -1,0 +1,63 @@
+name: 발송 실패 추적
+
+# 언제 실행할지
+# daily.yml(웹진 생성)과 분리된 별도 워크플로우.
+# 흐름: 아침에 웹진/이메일 초안 → (사람) 협회 담당자 검토·발송 → 이 워크플로우가 발송 실패 추적.
+on:
+  schedule:
+    # 담당자가 오전 중 발송했다고 보고, 오전 11시에 그날 발송분의 실패를 집계한다.
+    # 발송을 늦게 했으면 다음 실행에서 잡힌다(이미 집계한 발송은 건너뛰므로 중복 없음).
+    - cron: '0 11 * * *'
+      timezone: 'Asia/Seoul'    # KST 11:00
+  workflow_dispatch:            # 담당자가 발송 직후 수동으로 즉시 추적 가능
+
+# 추적 결과(sending_failures.json)를 저장소에 반영하기 위한 쓰기 권한
+permissions:
+  contents: write
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) 저장소 코드 가져오기
+      - name: 저장소 코드 가져오기
+        uses: actions/checkout@v4
+
+      # 2) 파이썬 설치
+      - name: 파이썬 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3) 필요한 라이브러리 설치
+      - name: 라이브러리 설치
+        run: pip install requests python-dotenv
+
+      # 4) 발송 실패 추적 (스티비 API)
+      #    STIBEE_API_KEY: 스티비 API 키 (Secrets)
+      #    STIBEE_EMAIL_IDS(선택): 추적할 이메일 ID를 콤마로 지정. 없으면 목록에서 자동 선정.
+      - name: 발송 실패 추적 실행
+        env:
+          STIBEE_API_KEY: ${{ secrets.STIBEE_API_KEY }}
+          STIBEE_EMAIL_IDS: ${{ secrets.STIBEE_EMAIL_IDS }}
+        run: python stibee.py
+
+      # 5) 대시보드 재생성 (발송 실패 데이터를 대시보드에 반영)
+      #    generate.py는 오늘 data 기준으로 dashboard.html을 다시 만든다.
+      #    (sending_failures.json을 읽어 발송 실패 탭을 채움)
+      - name: 대시보드 재생성
+        run: python generate.py
+
+      # 6) 결과를 저장소에 반영 (변경 있을 때만 커밋)
+      - name: 결과 저장소에 반영
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "변경 사항 없음 - 커밋 생략"
+          else
+            git commit -m "자동: 발송 실패 추적 갱신"
+            git push
+          fi
