@@ -1,0 +1,82 @@
+name: 웹진 재생성 (수동)
+
+# 목적: 기사를 삭제·수정한 뒤 웹진을 다시 만들 때 사용한다.
+#
+# ⚠️ daily.yml(매일 웹진 자동 생성)을 수동 실행하면 collect.py 가 다시 돌아
+#    삭제한 기사가 되살아난다. 그래서 재생성은 반드시 이 워크플로우를 쓴다.
+#    (이 워크플로우는 generate.py 만 실행하므로 수집을 다시 하지 않는다)
+#
+# 사용법:
+#   1) data/YYYY-MM-DD.json 에서 지울 기사를 제거하고 커밋
+#   2) Actions → "웹진 재생성 (수동)" → Run workflow
+#      · 오늘 기사를 지웠다면 → 날짜 칸을 비우고 실행
+#      · 과거 기사를 지웠다면 → 날짜 칸에 그 날짜(예: 2026-07-10) 입력
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: '재생성할 과거 날짜 (YYYY-MM-DD). 비우면 최신 웹진만 재생성합니다.'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 저장소 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: 파이썬 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 라이브러리 설치
+        run: pip install python-dotenv
+
+      # 1) 날짜를 입력했을 때만: 그 날짜의 웹진 페이지(news/날짜.html)를 다시 만든다.
+      #    ※ 이 단계에서 index.html 이 그 과거 날짜 내용으로 덮어써지지만,
+      #      아래 2)번에서 최신으로 되돌리므로 문제되지 않는다.
+      #    ※ 입력값은 env 로 받아 스크립트에 안전하게 전달한다.
+      - name: 지정 날짜 웹진 재생성
+        if: ${{ inputs.date != '' }}
+        env:
+          TARGET_DATE: ${{ inputs.date }}
+        run: |
+          # 날짜 형식 확인 (YYYY-MM-DD 가 아니면 중단)
+          if ! echo "$TARGET_DATE" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'; then
+            echo "[오류] 날짜 형식이 올바르지 않습니다: $TARGET_DATE (예: 2026-07-10)"
+            exit 1
+          fi
+          if [ ! -f "data/$TARGET_DATE.json" ]; then
+            echo "[오류] 해당 날짜 데이터가 없습니다: data/$TARGET_DATE.json"
+            exit 1
+          fi
+          echo "지정 날짜 재생성: $TARGET_DATE"
+          python generate.py "$TARGET_DATE"
+
+      # 2) 항상 실행: 최신 날짜로 다시 만들어 index.html(현재 웹진)을 제자리로 돌린다.
+      #    generate.py 는 인자가 없으면 data 폴더의 가장 최근 날짜를 사용한다.
+      #    대시보드도 이 단계에서 함께 다시 만들어진다.
+      - name: 최신 웹진·대시보드 재생성
+        run: |
+          echo "최신 날짜로 index.html / dashboard.html 재생성"
+          python generate.py
+
+      # 3) 결과를 저장소에 반영 (변경 있을 때만 커밋)
+      - name: 결과 저장소에 반영
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "변경 사항 없음 - 커밋 생략"
+          else
+            git commit -m "수동: 웹진 재생성"
+            git push
+          fi
